@@ -5,12 +5,6 @@ from PIL import Image
 
 def user_avatar_path(instance, filename):
     return f'profile_pics/user_{instance.user.id}/{filename}'
-face_image = models.ImageField(
-    upload_to='face_recognition',
-    null=True, 
-    blank=True
-)
-face_recognition_enabled = models.BooleanField(default=False)
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -20,6 +14,12 @@ class Profile(models.Model):
         blank=True, 
         default='profile_pics/default_avatar.png'
     )
+    face_image = models.ImageField(
+        upload_to='face_recognition',
+        null=True,
+        blank=True
+    )
+    face_recognition_enabled = models.BooleanField(default=False)
     bio = models.TextField(max_length=500, blank=True)
 
     def save(self, *args, **kwargs):
