@@ -39,19 +39,25 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+USE_SOCIAL_AUTH = os.environ.get("USE_SOCIAL_AUTH", "False").lower() in ("1", "true", "yes", "on")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
+# Allow local development to boot even if a production secret key is not set.
+DEBUG = os.environ.get("DEBUG", "True").lower() in ("1", "true", "yes", "on")
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY and DEBUG:
+    SECRET_KEY = "django-insecure-dev-only-change-me"
+
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY is not set")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.5']
 
 
@@ -70,8 +76,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users.apps.UserConfig',
-    'social_django',
 ]
+
+if USE_SOCIAL_AUTH:
+    INSTALLED_APPS.append('social_django')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -102,12 +110,16 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'social_django.context_processors.backends',
-                'social_django.context_processors.login_redirect',
             ],
         },
     },
 ]
+
+if USE_SOCIAL_AUTH:
+    TEMPLATES[0]['OPTIONS']['context_processors'].extend([
+        'social_django.context_processors.backends',
+        'social_django.context_processors.login_redirect',
+    ])
 
 WSGI_APPLICATION = 'user_management.wsgi.application'
 
@@ -141,12 +153,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
-    'social_core.backends.github.GithubOAuth2',
-    'social_core.backends.google.GoogleOAuth2',
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
 
-    'django.contrib.auth.backends.ModelBackend',
-)
+if USE_SOCIAL_AUTH:
+    AUTHENTICATION_BACKENDS = [
+        'social_core.backends.github.GithubOAuth2',
+        'social_core.backends.google.GoogleOAuth2',
+        'django.contrib.auth.backends.ModelBackend',
+    ]
 
 
 # Internationalization
@@ -188,8 +202,9 @@ LOGIN_URL = 'login'
 
 
 # social auth configs for github
-SOCIAL_AUTH_GITHUB_KEY = os.environ.get("GITHUB_KEY")
-SOCIAL_AUTH_GITHUB_SECRET = os.environ.get("GITHUB_SECRET")
+if USE_SOCIAL_AUTH:
+    SOCIAL_AUTH_GITHUB_KEY = os.environ.get("GITHUB_KEY")
+    SOCIAL_AUTH_GITHUB_SECRET = os.environ.get("GITHUB_SECRET")
 
 # social auth configs for google
 EMAIL_HOST_USER = os.environ.get("EMAIL_USER")
